@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: <mysite-server>
+spec:
+  ports:
+  - port: 80
+    targetPort: 3030
+  selector:
+    app: <mysite-server>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <mysite-server>
+spec:
+  selector:
+    matchLabels:
+      app: <mysite-server>
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: <mysite-server>
+    spec:
+      containers:
+      - name: <mysite-server>
+        image: gcr.io/<project-id>/<registry-name>:<commit-id>
+        ports:
+        - containerPort: 3030

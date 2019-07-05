@@ -1,0 +1,24 @@
+options:
+  docker: true
+image: node:12-alpine
+pipelines:
+  default:
+    - step:
+        # set GCLOUD_PROJECT, GCLOUD_API_KEYFILE,
+        # set GCLOUD_REGISTRY, GCLOUD_CLUSTER
+        name: Deploy to GCloud
+        deployment: production
+        image: google/cloud-sdk:latest
+        script:
+          # kubectl
+          - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+          - chmod +x ./kubectl
+          - mv ./kubectl /usr/local/bin/kubectl
+          # gcloud
+          - echo $GCLOUD_API_KEYFILE | base64 --decode --ignore-garbage > ./gcloud-api-key.json
+          - gcloud auth activate-service-account --key-file gcloud-api-key.json
+          - gcloud config set project $GCLOUD_PROJECT
+          - gcloud config list
+          - gcloud builds submit -t gcr.io/$GCLOUD_PROJECT/$GCLOUD_REGISTRY:$BITBUCKET_COMMIT
+          - gcloud container clusters get-credentials $GCLOUD_CLUSTER --zone=us-central1-f --project $GCLOUD_PROJECT
+          - kubectl set image deployment.extensions/<metadata-name> <spec-containers-name>=gcr.io/$GCLOUD_PROJECT/$GCLOUD_REGISTRY:$BITBUCKET_COMMIT
